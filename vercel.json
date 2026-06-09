@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/generate-lyric",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/publish-lyric",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

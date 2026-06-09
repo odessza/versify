@@ -65,7 +65,14 @@ Supabase connected. All pages fetch live data.
 - **`src/lib/supabase.js`**: Supabase client using VITE_ env vars
 - **`.env`**: gitignored; holds VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 
-Next: add today's lyric row in Supabase to see the live Home page; build the admin/lyric pipeline.
+- **`api/generate-lyric.js`**: daily cron at 09:00 UTC — calls Gemini 2.0 Flash to pick artist/song/lyric, calls Genius API for album art + URL, inserts draft row (`published=false, approved=false`) for tomorrow
+- **`api/publish-lyric.js`**: daily cron at 00:00 UTC — sets `published=true` for today's lyric if `approved=true`
+- **`vercel.json`**: cron schedules for both functions
+- All cron endpoints protected with `CRON_SECRET` bearer token
+
+⚠️ Gemini API key is on free tier with quota 0 for gemini-2.0-flash — billing must be enabled on the Google Cloud project before the pipeline runs. Genius API is confirmed working.
+
+Next: build the admin view so lyrics can be reviewed and approved before publishing.
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.
