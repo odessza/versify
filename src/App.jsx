@@ -3,6 +3,7 @@ import Nav from './components/Nav'
 import Home from './pages/Home'
 import Feed from './pages/Feed'
 import Archive from './pages/Archive'
+import Admin from './pages/Admin'
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/feed/:date" element={<Feed />} />
         <Route path="/archive" element={<Archive />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   )
