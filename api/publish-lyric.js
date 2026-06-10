@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getDateIST } from './_dateIST.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = getDateIST() // today in IST
 
   const { data, error } = await supabase
     .from('lyrics')

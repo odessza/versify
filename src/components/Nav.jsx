@@ -4,6 +4,7 @@ const today = new Date().toLocaleDateString('en-US', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
+  timeZone: 'Asia/Kolkata',
 })
 
 export default function Nav() {

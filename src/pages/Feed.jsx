@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
+import { getDateIST } from '../lib/dateIST'
 
 const PAGE_SIZE = 50
 
@@ -22,7 +23,7 @@ function timeAgo(iso) {
 export default function Feed() {
   const { date } = useParams()
   const userId = getUserId()
-  const targetDate = date ?? new Date().toISOString().slice(0, 10)
+  const targetDate = date ?? getDateIST()
 
   const [lyric, setLyric] = useState(null)
   const [thoughts, setThoughts] = useState([])

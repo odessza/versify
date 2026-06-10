@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
+import { getDateIST } from '../lib/dateIST'
 
-const TODAY = new Date().toISOString().slice(0, 10)
+const TODAY = getDateIST()
 
 export default function Home() {
   const [lyric, setLyric] = useState(null)

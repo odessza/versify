@@ -143,7 +143,7 @@ export default function Admin() {
             return (
               <div key={draft.id}>
                 <p className="text-sm text-[#0a0a0a]/40">
-                  Approved. Will publish at midnight UTC.
+                  Approved. Will publish at midnight IST.
                 </p>
               </div>
             )

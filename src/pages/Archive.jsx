@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
+import { getDateIST } from '../lib/dateIST'
 
 function SpeechBubble() {
   return (
@@ -38,7 +39,7 @@ export default function Archive() {
 
   useEffect(() => {
     async function load() {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = getDateIST()
       const userId = getUserId()
 
       const { data: lyrics, error: lyricsError } = await supabase

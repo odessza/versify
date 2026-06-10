@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { fetchAndInsertDraft } from './_lyricPipeline.js'
+import { getDateIST } from './_dateIST.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -11,9 +12,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const tomorrow = new Date()
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
-  const date = tomorrow.toISOString().slice(0, 10)
+  const date = getDateIST(1) // tomorrow in IST
 
   const { data: existing } = await supabase
     .from('lyrics')
