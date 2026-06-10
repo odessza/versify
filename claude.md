@@ -56,23 +56,35 @@ A lyric-based anonymous journalling website. Every day, one curated lyric is dis
 - CSS: Tailwind utility classes only — no separate CSS files except `index.css`
 
 ## Current status
-Supabase connected. All pages fetch live data.
+Supabase connected. All pages fetch live data. Deployed to Vercel at https://versify-shoegaze.vercel.app.
 
-- **Schema**: `lyrics` table (id, date, lyric_text, song, artist, album_art_url, genius_url, published, created_at) and `thoughts` table (id, lyric_id FK, user_id UUID, content, created_at). Index on thoughts(lyric_id, created_at desc).
+- **Schema**: `lyrics` table (id, date, lyric_text, song, artist, album_art_url, genius_url, published, approved, created_at) and `thoughts` table (id, lyric_id FK, user_id UUID, content, created_at). Index on thoughts(lyric_id, created_at desc).
 - **Home**: fetches today's published lyric; submits Thoughts with anonymous user_id from localStorage
-- **Feed** (`/feed` and `/feed/:date`): fetches lyric + paginated thoughts (50/page) for the given date
+- **Feed** (`/feed` and `/feed/:date`): fetches lyric + paginated thoughts (50/page) for the given date. Gate added: users visiting `/feed` who haven't posted today see a prompt ("Aren't you nosy?...") with a "Share a Thought" CTA back to `/`. Past date feeds (`/feed/:date`) bypass the gate — always viewable.
 - **Archive**: fetches all past published lyrics with thought counts and user-posted detection (3 queries, Promise.all)
 - **`src/lib/supabase.js`**: Supabase client using VITE_ env vars
-- **`.env`**: gitignored; holds VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+- **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD
 
-- **`api/generate-lyric.js`**: daily cron at 09:00 UTC — calls Gemini 3 Flash to pick artist/song/lyric, calls Genius API for album art + URL, inserts draft row (`published=false, approved=false`) for tomorrow
-- **`api/publish-lyric.js`**: daily cron at 00:00 UTC — sets `published=true` for today's lyric if `approved=true`
-- **`vercel.json`**: cron schedules for both functions
+- **`api/generate-lyric.js`**: daily cron at 03:30 UTC (= 09:00 IST) — calls Gemini 3 Flash to pick artist/song/lyric, calls Genius API for album art + URL, inserts draft row (`published=false, approved=false`) for tomorrow
+- **`api/publish-lyric.js`**: daily cron at 18:30 UTC (= 00:00 IST) — sets `published=true` for today's lyric if `approved=true`
+- **`api/admin-auth.js`**, **`api/admin-lyrics.js`**, **`api/admin-approve.js`**, **`api/admin-regenerate.js`**: admin API endpoints, all protected by HMAC token (password never in client bundle)
+- **`api/_lyricPipeline.js`**: shared Gemini + Genius + Supabase insert logic used by generate and regenerate
+- **`api/_adminAuth.js`**: HMAC token generation and verification
+- **`api/_dateIST.js`**: IST date utility for server-side use
+- **`vercel.json`**: cron schedules + SPA rewrite rule (`/((?!api/.*)` → `/index.html`)
 - All cron endpoints protected with `CRON_SECRET` bearer token
+- All timezone handling uses IST (UTC+5:30) throughout — both frontend (`src/lib/dateIST.js`) and backend (`api/_dateIST.js`)
 
-⚠️ Gemini API key is on free tier with quota 0 for gemini-3-flash-preview — billing must be enabled on the Google Cloud project before the pipeline runs. Genius API is confirmed working.
+- **Admin view** (`/admin`): password login → sessionStorage token. Shows pending drafts (`approved=false, published=false`) with editable lyric textarea, Approve and Regenerate buttons. Approve sets `approved=true`; Regenerate calls Gemini+Genius to replace the draft.
+- **404 page** (`*`): orange "404" label, bold heading, back link to home.
 
-Next: build the admin view so lyrics can be reviewed and approved before publishing.
+⚠️ Gemini billing must be enabled on the Google Cloud project for the lyric pipeline to run (free tier has quota 0).
+⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set — the admin panel only shows rows where both are false.
+
+Next:
+- Archive empty state on day 1 — first visitors see nothing useful
+- Supabase RLS tightening — thoughts can be inserted with any user_id
+- Rate limiting — nothing stops Thought spam
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.
