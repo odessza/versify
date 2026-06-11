@@ -19,6 +19,8 @@ export default function Admin() {
   const [editedTexts, setEditedTexts] = useState({})
   const [draftsLoading, setDraftsLoading] = useState(false)
   const [actionState, setActionState] = useState({})
+  const [generating, setGenerating] = useState(false)
+  const [generateResult, setGenerateResult] = useState(null)
 
   useEffect(() => {
     const stored = sessionStorage.getItem(TOKEN_KEY)
@@ -61,6 +63,27 @@ export default function Admin() {
       setAuthError('Wrong password.')
     }
     setAuthLoading(false)
+  }
+
+  async function handleGenerate() {
+    setGenerating(true)
+    setGenerateResult(null)
+    const res = await fetch('/api/admin-generate', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.exists) {
+        setGenerateResult('exists')
+      } else {
+        setGenerateResult('success')
+        loadDrafts(token)
+      }
+    } else {
+      setGenerateResult('error')
+    }
+    setGenerating(false)
   }
 
   async function handleApprove(draft) {
@@ -134,6 +157,19 @@ export default function Admin() {
       {!draftsLoading && drafts.length === 0 && (
         <p className="text-sm text-[#0a0a0a]/40">No pending drafts.</p>
       )}
+
+      <div className="mb-12 pb-12 border-b border-[#0a0a0a]/10">
+        <button
+          onClick={handleGenerate}
+          disabled={generating}
+          className="text-sm text-[#0a0a0a]/60 border border-[#0a0a0a]/15 px-4 py-2 hover:border-[#0a0a0a]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {generating ? 'Generating…' : 'Backup Generate Trigger'}
+        </button>
+        {generateResult === 'success' && <p className="text-xs text-[#0a0a0a]/40 mt-2">Draft generated — see below.</p>}
+        {generateResult === 'exists' && <p className="text-xs text-[#0a0a0a]/40 mt-2">Tomorrow's lyric is already scheduled.</p>}
+        {generateResult === 'error' && <p className="text-xs text-red-500 mt-2">Generation failed. Try again.</p>}
+      </div>
 
       <div className="space-y-12">
         {drafts.map(draft => {

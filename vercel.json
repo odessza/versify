@@ -8,6 +8,10 @@
       "schedule": "30 3 * * *"
     },
     {
+      "path": "/api/generate-lyric",
+      "schedule": "30 7 * * *"
+    },
+    {
       "path": "/api/publish-lyric",
       "schedule": "30 18 * * *"
     }

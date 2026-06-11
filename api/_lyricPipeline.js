@@ -38,7 +38,7 @@ Respond with only the JSON object, no markdown, no other text.`,
 
   if (!response.ok) {
     const err = await response.json()
-    throw new Error(`Gemini error ${response.status}: ${err.error?.message}`)
+    throw new Error(`Gemini API error: ${err.error?.message ?? response.status}`)
   }
 
   const data = await response.json()
