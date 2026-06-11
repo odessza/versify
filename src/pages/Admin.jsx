@@ -16,6 +16,7 @@ export default function Admin() {
   const [authLoading, setAuthLoading] = useState(false)
 
   const [drafts, setDrafts] = useState([])
+  const [scheduled, setScheduled] = useState([])
   const [editedTexts, setEditedTexts] = useState({})
   const [draftsLoading, setDraftsLoading] = useState(false)
   const [actionState, setActionState] = useState({})
@@ -37,9 +38,10 @@ export default function Admin() {
     })
     if (res.ok) {
       const data = await res.json()
-      setDrafts(data)
+      setDrafts(data.drafts)
+      setScheduled(data.scheduled)
       const texts = {}
-      for (const d of data) texts[d.id] = d.lyric_text
+      for (const d of data.drafts) texts[d.id] = d.lyric_text
       setEditedTexts(texts)
     }
     setDraftsLoading(false)
@@ -170,6 +172,26 @@ export default function Admin() {
         {generateResult === 'exists' && <p className="text-xs text-[#0a0a0a]/40 mt-2">Tomorrow's lyric is already scheduled.</p>}
         {generateResult === 'error' && <p className="text-xs text-red-500 mt-2">Generation failed. Try again.</p>}
       </div>
+
+      {scheduled.length > 0 && (
+        <div className="mb-12 pb-12 border-b border-[#0a0a0a]/10">
+          <h3 className="text-sm font-bold text-[#0a0a0a] mb-6">Scheduled</h3>
+          <div className="space-y-6">
+            {scheduled.map(item => (
+              <div key={item.id} className="flex items-start gap-4">
+                {item.album_art_url && (
+                  <img src={item.album_art_url} alt={item.song} className="w-10 h-10 object-cover shrink-0 mt-1" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-[#0a0a0a] leading-snug mb-1">{item.lyric_text}</p>
+                  <p className="text-sm text-[#0a0a0a]/50">{item.song} — {item.artist}</p>
+                  <p className="text-xs text-[#0a0a0a]/40 mt-1">{formatDate(item.date)} · Publishes at midnight IST</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-12">
         {drafts.map(draft => {
