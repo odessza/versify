@@ -65,25 +65,27 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 - **`src/lib/supabase.js`**: Supabase client using VITE_ env vars
 - **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD
 
-- **`api/generate-lyric.js`**: daily cron at 03:30 UTC (= 09:00 IST) — calls Gemini 3 Flash to pick artist/song/lyric, calls Genius API for album art + URL, inserts draft row (`published=false, approved=false`) for tomorrow
-- **`api/publish-lyric.js`**: daily cron at 18:30 UTC (= 00:00 IST) — sets `published=true` for today's lyric if `approved=true`
-- **`api/admin-auth.js`**, **`api/admin-lyrics.js`**, **`api/admin-approve.js`**, **`api/admin-regenerate.js`**: admin API endpoints, all protected by HMAC token (password never in client bundle)
+- **`api/generate-lyric.js`**: two daily crons — 03:30 UTC (09:00 IST, primary) and 07:30 UTC (13:00 IST, backup). Calls Gemini 3 Flash + Genius API, inserts draft (`published=false, approved=false`) for tomorrow. Second run is a no-op if draft already exists.
+- **`api/publish-lyric.js`**: daily cron at 18:30 UTC (= 00:00 IST) — sets `published=true` for today's lyric if `approved=true`. Sends Slack warning if no approved lyric found.
+- **`api/admin-auth.js`**, **`api/admin-lyrics.js`**, **`api/admin-approve.js`**, **`api/admin-regenerate.js`**, **`api/admin-generate.js`**: admin API endpoints, all protected by HMAC token (password never in client bundle). `admin-lyrics` returns `{ drafts, scheduled }`. `admin-generate` triggers tomorrow's draft on demand.
 - **`api/_lyricPipeline.js`**: shared Gemini + Genius + Supabase insert logic used by generate and regenerate
 - **`api/_adminAuth.js`**: HMAC token generation and verification
 - **`api/_dateIST.js`**: IST date utility for server-side use
+- **`api/_notify.js`**: fire-and-forget Slack webhook helper (`notify(level, source, message)`). Requires `SLACK_WEBHOOK_URL` env var.
 - **`vercel.json`**: cron schedules + SPA rewrite rule (`/((?!api/.*)` → `/index.html`)
 - All cron endpoints protected with `CRON_SECRET` bearer token
 - All timezone handling uses IST (UTC+5:30) throughout — both frontend (`src/lib/dateIST.js`) and backend (`api/_dateIST.js`)
 
-- **Admin view** (`/admin`): password login → sessionStorage token. Shows pending drafts (`approved=false, published=false`) with editable lyric textarea, Approve and Regenerate buttons. Approve sets `approved=true`; Regenerate calls Gemini+Genius to replace the draft.
+- **Admin view** (`/admin`): password login → sessionStorage token. Three sections: (1) Backup Generate Trigger button — manually kicks off tomorrow's draft generation; (2) Scheduled — shows approved, not-yet-published lyrics with date and "Publishes at midnight IST" status; (3) Pending drafts — unapproved drafts with editable lyric textarea, Approve and Regenerate buttons.
 - **404 page** (`*`): orange "404" label, bold heading, back link to home.
+- **RLS**: thoughts INSERT requires a published lyric_id, non-empty content, ≤10,000 chars, and max 5 thoughts per user_id per lyric.
+- **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD, SLACK_WEBHOOK_URL
 
 ⚠️ Gemini billing must be enabled on the Google Cloud project for the lyric pipeline to run (free tier has quota 0).
-⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set — the admin panel only shows rows where both are false.
+⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set — the Pending drafts section only shows `approved=false, published=false` rows.
 
 Next:
-- Rate limiting — RLS caps at 5 thoughts per user_id per lyric; IP-based limiting deferred
-- **`api/_notify.js`**: Slack webhook helper (`notify(level, source, message)`); used by cron jobs to alert on failures. Requires `SLACK_WEBHOOK_URL` env var (set in `.env` and Vercel).
+- IP-based rate limiting — deferred; current RLS cap (5/user/lyric) covers casual abuse
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.
