@@ -138,6 +138,7 @@ export default function Home() {
               onChange={e => setThought(e.target.value)}
               placeholder="Write your Thought…"
               rows={5}
+              maxLength={10000}
               className="w-full text-[#0a0a0a] text-base placeholder:text-[#0a0a0a]/30 border border-[#0a0a0a]/15 resize-none p-4 focus:outline-none focus:border-[#0a0a0a]/40 mb-4"
             />
             <div className="flex items-center justify-between">

@@ -93,7 +93,10 @@ export default function Archive() {
       {error && <p className="text-sm text-[#0a0a0a]/40 mb-4">{error}</p>}
 
       {rows.length === 0 ? (
-        <p className="text-sm text-[#0a0a0a]/40">No past lyrics yet.</p>
+        <div>
+          <p className="text-sm text-[#0a0a0a]">Nothing here yet.</p>
+          <p className="text-sm text-[#0a0a0a]/40 mt-1">Past lyrics will collect here over time. Come back tomorrow.</p>
+        </div>
       ) : (
         <div>
           {rows.map(item => (

@@ -82,9 +82,7 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 ⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set — the admin panel only shows rows where both are false.
 
 Next:
-- Archive empty state on day 1 — first visitors see nothing useful
-- Supabase RLS tightening — thoughts can be inserted with any user_id
-- Rate limiting — nothing stops Thought spam
+- Rate limiting — RLS caps at 5 thoughts per user_id per lyric; IP-based limiting deferred
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.
