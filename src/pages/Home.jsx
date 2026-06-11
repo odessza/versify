@@ -82,31 +82,29 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {lyric.album_art_url && (
+        <a
+          href={lyric.genius_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 w-[100px] h-[100px] block overflow-hidden shadow-sm"
+        >
+          <img
+            src={lyric.album_art_url}
+            alt={`${lyric.song} album art`}
+            className="w-full h-full object-cover"
+          />
+        </a>
+      )}
       <div className="max-w-2xl mx-auto px-6 py-20">
 
         <div className="mb-12">
           <p className="text-4xl font-bold text-[#0a0a0a] leading-tight mb-5">
             {lyric.lyric_text}
           </p>
-          <div className="flex items-end justify-between">
-            <p className="text-sm text-[#0a0a0a]/50 tracking-wide">
-              {lyric.song} — {lyric.artist}
-            </p>
-            {lyric.album_art_url && (
-              <a
-                href={lyric.genius_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-11 h-11 shrink-0 ml-4 block overflow-hidden"
-              >
-                <img
-                  src={lyric.album_art_url}
-                  alt={`${lyric.song} album art`}
-                  className="w-full h-full object-cover"
-                />
-              </a>
-            )}
-          </div>
+          <p className="text-sm text-[#0a0a0a]/50 tracking-wide">
+            {lyric.song} — {lyric.artist}
+          </p>
         </div>
 
         <hr className="border-[#0a0a0a]/10 mb-10" />
