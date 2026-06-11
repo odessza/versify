@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { fetchAndInsertDraft } from './_lyricPipeline.js'
 import { getDateIST } from './_dateIST.js'
+import { notify } from './_notify.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -28,6 +29,7 @@ export default async function handler(req, res) {
     const lyric = await fetchAndInsertDraft(date)
     return res.status(200).json({ message: 'Draft lyric created', lyric })
   } catch (err) {
+    await notify('error', 'generate-lyric', err.message)
     return res.status(502).json({ error: err.message })
   }
 }

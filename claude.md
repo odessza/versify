@@ -83,6 +83,7 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 
 Next:
 - Rate limiting — RLS caps at 5 thoughts per user_id per lyric; IP-based limiting deferred
+- **`api/_notify.js`**: Slack webhook helper (`notify(level, source, message)`); used by cron jobs to alert on failures. Requires `SLACK_WEBHOOK_URL` env var (set in `.env` and Vercel).
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { getDateIST } from './_dateIST.js'
+import { notify } from './_notify.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -24,8 +25,10 @@ export default async function handler(req, res) {
 
   if (error) {
     if (error.code === 'PGRST116') {
+      await notify('warn', 'publish-lyric', `No approved lyric for ${today} — home page will be blank today.`)
       return res.status(200).json({ message: 'No approved lyric to publish for today' })
     }
+    await notify('error', 'publish-lyric', error.message)
     return res.status(500).json({ error: error.message })
   }
 
