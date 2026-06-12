@@ -1,7 +1,71 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Inter', -apple-system, Helvetica, Arial, sans-serif;
+
+  --color-ink: #0a0a0a;
+  --color-muted: #8a8a8a;
+  --color-line: #ececec;
+  --color-orange: #f9743a;
+  --color-orange-dark: #e85f26;
+  --color-orange-soft: #ffeadd;
+}
+
 body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background: #ffffff;
   color: #0a0a0a;
+}
+
+.bg-dawn {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #f3f5ff 0%, rgba(243,245,255,0) 22%),
+    linear-gradient(180deg, rgba(255,238,228,0) 55%, #ffeedf 82%, #ffe0cd 100%);
+}
+
+.bg-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/rect%3E%3C/svg%3E");
+}
+
+.vinyl {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle at center,
+    #0c0c0c 0px, #0c0c0c 1.4px, #1c1c1c 1.4px, #1c1c1c 3px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.32), inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.vinyl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(125deg,
+    rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 38%,
+    rgba(255,255,255,0) 62%, rgba(255,255,255,0.08) 100%);
+}
+
+@keyframes vinyl-spin { to { transform: rotate(360deg); } }
+
+.group:hover .vinyl { animation: vinyl-spin 3.4s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .group:hover .vinyl { animation: none; }
+}
+
+@media (max-width: 560px) {
+  .vinyl {
+    width: 84px;
+    height: 84px;
+  }
 }

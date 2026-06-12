@@ -9,6 +9,8 @@ import NotFound from './pages/NotFound'
 export default function App() {
   return (
     <BrowserRouter>
+      <div className="bg-dawn" />
+      <div className="bg-grain" />
       <Nav />
       <Routes>
         <Route path="/" element={<Home />} />

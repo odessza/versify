@@ -9,14 +9,14 @@ const today = new Date().toLocaleDateString('en-US', {
 
 export default function Nav() {
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-[#0a0a0a]/10">
-      <Link to="/" className="text-sm font-bold tracking-widest uppercase text-[#0a0a0a]">
-        Shoegaze
+    <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-8 py-5 border-b border-line bg-white/60 backdrop-blur-sm">
+      <Link to="/" className="font-sans font-extrabold text-[15px] tracking-[0.22em] text-ink uppercase">
+        SHOEGAZE
       </Link>
-      <span className="text-sm text-[#0a0a0a]/50">{today}</span>
+      <span className="font-sans font-extrabold text-[19px] tracking-tight text-center text-ink">{today}</span>
       <Link
         to="/archive"
-        className="text-sm font-medium text-[#0a0a0a] hover:text-[#ff5c00] transition-colors"
+        className="justify-self-end font-sans font-semibold text-[14.5px] text-orange rounded-full px-4 py-2 transition-colors hover:bg-orange-soft hover:text-orange-dark"
       >
         Archive
       </Link>
