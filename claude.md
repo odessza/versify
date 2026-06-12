@@ -59,7 +59,7 @@ A lyric-based anonymous journalling website. Every day, one curated lyric is dis
 Supabase connected. All pages fetch live data. Deployed to Vercel at https://versify-shoegaze.vercel.app.
 
 - **Schema**: `lyrics` table (id, date, lyric_text, song, artist, album_art_url, genius_url, published, approved, created_at) and `thoughts` table (id, lyric_id FK, user_id UUID, content, created_at). Index on thoughts(lyric_id, created_at desc).
-- **Home**: fetches today's published lyric; submits Thoughts with anonymous user_id from localStorage
+- **Home**: fetches today's published lyric; submits Thoughts with anonymous user_id from localStorage. Redesigned with Fraunces display font for the lyric, Inter for all UI, dawn gradient background, rounded textarea with orange focus ring, pill Post Thought button, and `NowPlaying` vinyl component fixed bottom-right.
 - **Feed** (`/feed` and `/feed/:date`): fetches lyric + paginated thoughts (50/page) for the given date. Gate added: users visiting `/feed` who haven't posted today see a prompt ("Aren't you nosy?...") with a "Share a Thought" CTA back to `/`. Past date feeds (`/feed/:date`) bypass the gate — always viewable.
 - **Archive**: fetches all past published lyrics with thought counts and user-posted detection (3 queries, Promise.all)
 - **`src/lib/supabase.js`**: Supabase client using VITE_ env vars
@@ -78,6 +78,9 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 
 - **Admin view** (`/admin`): password login → sessionStorage token. Three sections: (1) Backup Generate Trigger button — manually kicks off tomorrow's draft generation; (2) Scheduled — shows approved, not-yet-published lyrics with date and "Publishes at midnight IST" status; (3) Pending drafts — unapproved drafts with editable lyric textarea, Approve and Regenerate buttons.
 - **404 page** (`*`): orange "404" label, bold heading, back link to home.
+- **Design system** (`src/index.css`): Tailwind v4 `@theme` tokens — `ink`, `muted`, `line`, `orange`, `orange-dark`, `orange-soft`; `font-display` (Fraunces), `font-sans` (Inter). Fixed `.bg-dawn` gradient + `.bg-grain` SVG noise overlay applied globally in `App.jsx`. `.vinyl` CSS class with `repeating-radial-gradient` grooves and `vinyl-spin` keyframe (hover-triggered, respects `prefers-reduced-motion`).
+- **`src/components/NowPlaying.jsx`**: fixed bottom-right vinyl player showing album art in center label, song/artist text below, spins on hover. Used only on Home page.
+- **Nav** (`src/components/Nav.jsx`): 3-col grid — SHOEGAZE wordmark left, bold date centre, orange pill Archive link right. Frosted glass background (`bg-white/60 backdrop-blur-sm`).
 - **RLS**: thoughts INSERT requires a published lyric_id, non-empty content, ≤10,000 chars, and max 5 thoughts per user_id per lyric.
 - **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD, SLACK_WEBHOOK_URL
 
@@ -86,6 +89,7 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 
 Next:
 - IP-based rate limiting — deferred; current RLS cap (5/user/lyric) covers casual abuse
+- Feed, Archive, Admin design pass — extend same color/font tokens to remaining pages
 
 ## General Instructions for Claude Code
 - After completing any task, update the "Current status" section of this file to reflect what was completed, what changed, and what's next.
