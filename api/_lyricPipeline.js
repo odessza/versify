@@ -5,7 +5,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 )
 
-async function getLyricFromGemini() {
+async function getUsedSongs() {
+  const { data } = await supabase
+    .from('lyrics')
+    .select('song, artist')
+  if (!data || data.length === 0) return ''
+  const list = [...new Map(data.map(r => [`${r.artist}|${r.song}`, r])).values()]
+    .map(r => `- ${r.artist} — ${r.song}`)
+    .join('\n')
+  return `\nDo NOT choose any of the following songs, as they have already been used:\n${list}\n`
+}
+
+async function getLyricFromGemini(usedSongsBlock) {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
@@ -27,7 +38,7 @@ Rules:
 - Avoid explicit content
 - Choose from a wide range of genres and eras
 - The lyric should work as a standalone reflection prompt without requiring knowledge of the song
-
+${usedSongsBlock}
 Respond with only the JSON object, no markdown, no other text.`,
           }],
         }],
@@ -77,9 +88,10 @@ async function isDuplicateLyric(lyricText) {
 
 export async function fetchAndInsertDraft(date) {
   const MAX_ATTEMPTS = 3
+  const usedSongsBlock = await getUsedSongs()
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const { artist, song, lyric } = await getLyricFromGemini()
+    const { artist, song, lyric } = await getLyricFromGemini(usedSongsBlock)
 
     if (await isDuplicateLyric(lyric)) continue
 
