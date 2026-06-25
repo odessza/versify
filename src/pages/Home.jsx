@@ -121,7 +121,8 @@ export default function Home() {
             <textarea
               value={thought}
               onChange={e => setThought(e.target.value)}
-              placeholder="Write your Thought…"
+              placeholder={lyric.thought_placeholder || "No one's watching. What's on your mind?"}
+
               rows={5}
               maxLength={10000}
               className="w-full min-h-[170px] resize-y rounded-2xl border border-[#e3e3e3] bg-white/85 px-6 py-5 font-sans text-[17px] leading-relaxed text-ink outline-none placeholder:text-[#bdbdbd] transition focus:border-orange focus:ring-4 focus:ring-[rgba(249,116,58,0.12)]"

@@ -58,6 +58,26 @@ Respond with only the JSON object, no markdown, no other text.`,
   return JSON.parse(text)
 }
 
+async function getPlaceholderFromGemini(lyric, song, artist) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are writing placeholder text for a textarea on an anonymous journaling website. A visitor is about to write a short personal reflection in response to this lyric: '${lyric}' from '${song}' by '${artist}'. Write a single short placeholder sentence (under 10 words) that feels like a quiet, personal invitation — poetic but not precious, warm but not pushy. No quotes. No punctuation at the end. Return only the placeholder text, nothing else.`,
+          }],
+        }],
+      }),
+    },
+  )
+  if (!response.ok) return null
+  const data = await response.json()
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+}
+
 async function getSongMetaFromGenius(artist, song) {
   const query = encodeURIComponent(`${artist} ${song}`)
   const response = await fetch(
@@ -95,7 +115,10 @@ export async function fetchAndInsertDraft(date) {
 
     if (await isDuplicateLyric(lyric)) continue
 
-    const { albumArtUrl, geniusUrl } = await getSongMetaFromGenius(artist, song)
+    const [{ albumArtUrl, geniusUrl }, thoughtPlaceholder] = await Promise.all([
+      getSongMetaFromGenius(artist, song),
+      getPlaceholderFromGemini(lyric, song, artist),
+    ])
 
     const { data, error } = await supabase
       .from('lyrics')
@@ -106,6 +129,7 @@ export async function fetchAndInsertDraft(date) {
         artist,
         album_art_url: albumArtUrl,
         genius_url: geniusUrl,
+        thought_placeholder: thoughtPlaceholder,
         published: false,
         approved: true,
       })
