@@ -11,13 +11,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const [draftsResult, scheduledResult] = await Promise.all([
-    supabase.from('lyrics').select('*').eq('published', false).eq('approved', false).order('date', { ascending: true }),
-    supabase.from('lyrics').select('*').eq('published', false).eq('approved', true).order('date', { ascending: true }),
-  ])
+  const { data, error } = await supabase
+    .from('lyrics')
+    .select('*')
+    .order('date', { ascending: false })
+    .limit(90)
 
-  if (draftsResult.error) return res.status(500).json({ error: draftsResult.error.message })
-  if (scheduledResult.error) return res.status(500).json({ error: scheduledResult.error.message })
-
-  return res.status(200).json({ drafts: draftsResult.data, scheduled: scheduledResult.data })
+  if (error) return res.status(500).json({ error: error.message })
+  return res.status(200).json({ lyrics: data })
 }

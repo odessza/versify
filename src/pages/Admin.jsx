@@ -5,8 +5,30 @@ const TOKEN_KEY = 'shoegaze_admin_token'
 function formatDate(isoDate) {
   const [year, month, day] = isoDate.split('-').map(Number)
   return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    weekday: 'short', month: 'short', day: 'numeric',
   })
+}
+
+function StatusBadge({ lyric }) {
+  if (lyric.published) {
+    return (
+      <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+        Published
+      </span>
+    )
+  }
+  if (lyric.approved) {
+    return (
+      <span className="text-xs font-medium text-[#ff5c00] bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+        Scheduled
+      </span>
+    )
+  }
+  return (
+    <span className="text-xs font-medium text-[#0a0a0a]/40 bg-[#0a0a0a]/5 px-2 py-0.5 rounded-full whitespace-nowrap">
+      Draft
+    </span>
+  )
 }
 
 export default function Admin() {
@@ -15,36 +37,30 @@ export default function Admin() {
   const [authError, setAuthError] = useState(null)
   const [authLoading, setAuthLoading] = useState(false)
 
-  const [drafts, setDrafts] = useState([])
-  const [scheduled, setScheduled] = useState([])
-  const [editedTexts, setEditedTexts] = useState({})
-  const [draftsLoading, setDraftsLoading] = useState(false)
-  const [actionState, setActionState] = useState({})
+  const [lyrics, setLyrics] = useState([])
+  const [lyricsLoading, setLyricsLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generateResult, setGenerateResult] = useState(null)
+  const [regenState, setRegenState] = useState({})
 
   useEffect(() => {
     const stored = sessionStorage.getItem(TOKEN_KEY)
     if (stored) {
       setToken(stored)
-      loadDrafts(stored)
+      loadLyrics(stored)
     }
   }, [])
 
-  async function loadDrafts(t) {
-    setDraftsLoading(true)
+  async function loadLyrics(t) {
+    setLyricsLoading(true)
     const res = await fetch('/api/admin-lyrics', {
       headers: { Authorization: `Bearer ${t}` },
     })
     if (res.ok) {
       const data = await res.json()
-      setDrafts(data.drafts)
-      setScheduled(data.scheduled)
-      const texts = {}
-      for (const d of data.drafts) texts[d.id] = d.lyric_text
-      setEditedTexts(texts)
+      setLyrics(data.lyrics)
     }
-    setDraftsLoading(false)
+    setLyricsLoading(false)
   }
 
   async function handleLogin(e) {
@@ -60,7 +76,7 @@ export default function Admin() {
       const { token: t } = await res.json()
       sessionStorage.setItem(TOKEN_KEY, t)
       setToken(t)
-      loadDrafts(t)
+      loadLyrics(t)
     } else {
       setAuthError('Wrong password.')
     }
@@ -76,50 +92,26 @@ export default function Admin() {
     })
     if (res.ok) {
       const data = await res.json()
-      if (data.exists) {
-        setGenerateResult('exists')
-      } else {
-        setGenerateResult('success')
-        loadDrafts(token)
-      }
+      setGenerateResult(data.exists ? 'exists' : 'success')
+      if (!data.exists) loadLyrics(token)
     } else {
       setGenerateResult('error')
     }
     setGenerating(false)
   }
 
-  async function handleApprove(draft) {
-    setActionState(s => ({ ...s, [draft.id]: 'approving' }))
-    const res = await fetch('/api/admin-approve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id: draft.id, lyric_text: editedTexts[draft.id] }),
-    })
-    if (res.ok) {
-      setActionState(s => ({ ...s, [draft.id]: 'approved' }))
-    } else {
-      setActionState(s => ({ ...s, [draft.id]: 'error' }))
-    }
-  }
-
-  async function handleRegenerate(draft) {
-    setActionState(s => ({ ...s, [draft.id]: 'regenerating' }))
+  async function handleRegenerate(lyric) {
+    setRegenState(s => ({ ...s, [lyric.id]: 'regenerating' }))
     const res = await fetch('/api/admin-regenerate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ id: draft.id }),
+      body: JSON.stringify({ id: lyric.id }),
     })
     if (res.ok) {
-      const { lyric } = await res.json()
-      setDrafts(ds => ds.map(d => d.id === draft.id ? lyric : d))
-      setEditedTexts(t => ({ ...t, [lyric.id]: lyric.lyric_text }))
-      setActionState(s => {
-        const next = { ...s }
-        delete next[draft.id]
-        return next
-      })
+      setRegenState(s => { const n = { ...s }; delete n[lyric.id]; return n })
+      loadLyrics(token)
     } else {
-      setActionState(s => ({ ...s, [draft.id]: 'error' }))
+      setRegenState(s => ({ ...s, [lyric.id]: 'error' }))
     }
   }
 
@@ -151,111 +143,79 @@ export default function Admin() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <h2 className="text-lg font-bold text-[#0a0a0a] mb-8">Pending drafts</h2>
-
-      {draftsLoading && <p className="text-sm text-[#0a0a0a]/40">Loading…</p>}
-
-      {!draftsLoading && drafts.length === 0 && (
-        <p className="text-sm text-[#0a0a0a]/40">No pending drafts.</p>
-      )}
-
-      <div className="mb-12 pb-12 border-b border-[#0a0a0a]/10">
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="text-sm text-[#0a0a0a]/60 border border-[#0a0a0a]/15 px-4 py-2 hover:border-[#0a0a0a]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          {generating ? 'Generating…' : 'Backup Generate Trigger'}
-        </button>
-        {generateResult === 'success' && <p className="text-xs text-[#0a0a0a]/40 mt-2">Draft generated — see below.</p>}
-        {generateResult === 'exists' && <p className="text-xs text-[#0a0a0a]/40 mt-2">Tomorrow's lyric is already scheduled.</p>}
-        {generateResult === 'error' && <p className="text-xs text-red-500 mt-2">Generation failed. Try again.</p>}
+    <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="flex items-center justify-between mb-10">
+        <h1 className="text-lg font-bold text-[#0a0a0a]">Lyrics</h1>
+        <div className="flex items-center gap-3">
+          {generateResult === 'success' && <p className="text-xs text-[#0a0a0a]/40">Generated.</p>}
+          {generateResult === 'exists' && <p className="text-xs text-[#0a0a0a]/40">Already scheduled.</p>}
+          {generateResult === 'error' && <p className="text-xs text-red-500">Generation failed.</p>}
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="text-sm text-[#0a0a0a]/60 border border-[#0a0a0a]/15 px-4 py-2 hover:border-[#0a0a0a]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {generating ? 'Generating…' : 'Generate tomorrow'}
+          </button>
+        </div>
       </div>
 
-      {scheduled.length > 0 && (
-        <div className="mb-12 pb-12 border-b border-[#0a0a0a]/10">
-          <h3 className="text-sm font-bold text-[#0a0a0a] mb-6">Scheduled</h3>
-          <div className="space-y-6">
-            {scheduled.map(item => (
-              <div key={item.id} className="flex items-start gap-4">
-                {item.album_art_url && (
-                  <img src={item.album_art_url} alt={item.song} className="w-10 h-10 object-cover shrink-0 mt-1" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-[#0a0a0a] leading-snug mb-1">{item.lyric_text}</p>
-                  <p className="text-sm text-[#0a0a0a]/50">{item.song} — {item.artist}</p>
-                  <p className="text-xs text-[#0a0a0a]/40 mt-1">{formatDate(item.date)} · Publishes at midnight IST</p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {lyricsLoading && <p className="text-sm text-[#0a0a0a]/40">Loading…</p>}
+
+      {!lyricsLoading && lyrics.length === 0 && (
+        <p className="text-sm text-[#0a0a0a]/40">No lyrics yet.</p>
+      )}
+
+      {!lyricsLoading && lyrics.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b border-[#0a0a0a]/10">
+                <th className="text-left text-xs font-semibold tracking-widest uppercase text-[#0a0a0a]/40 pb-3 pr-6 whitespace-nowrap">Date</th>
+                <th className="text-left text-xs font-semibold tracking-widest uppercase text-[#0a0a0a]/40 pb-3 pr-6">Lyric</th>
+                <th className="text-left text-xs font-semibold tracking-widest uppercase text-[#0a0a0a]/40 pb-3 pr-6 whitespace-nowrap">Song</th>
+                <th className="text-left text-xs font-semibold tracking-widest uppercase text-[#0a0a0a]/40 pb-3 pr-4">Status</th>
+                <th className="pb-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {lyrics.map(lyric => (
+                <tr key={lyric.id} className="border-b border-[#0a0a0a]/5 hover:bg-[#0a0a0a]/[0.015]">
+                  <td className="py-4 pr-6 text-[#0a0a0a]/50 whitespace-nowrap align-top text-xs">
+                    {formatDate(lyric.date)}
+                  </td>
+                  <td className="py-4 pr-6 text-[#0a0a0a] font-medium leading-snug align-top max-w-sm">
+                    <span className="line-clamp-2">{lyric.lyric_text}</span>
+                  </td>
+                  <td className="py-4 pr-6 align-top whitespace-nowrap">
+                    <span className="text-[#0a0a0a]/70">{lyric.song}</span>
+                    <br />
+                    <span className="text-[#0a0a0a]/40 text-xs">{lyric.artist}</span>
+                  </td>
+                  <td className="py-4 pr-4 align-top">
+                    <StatusBadge lyric={lyric} />
+                  </td>
+                  <td className="py-4 align-top">
+                    {!lyric.published && (
+                      regenState[lyric.id] === 'error'
+                        ? <span className="text-xs text-red-500">Failed</span>
+                        : (
+                          <button
+                            onClick={() => handleRegenerate(lyric)}
+                            disabled={regenState[lyric.id] === 'regenerating'}
+                            className="text-xs text-[#0a0a0a]/30 hover:text-[#0a0a0a]/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                          >
+                            {regenState[lyric.id] === 'regenerating' ? 'Regenerating…' : 'Regenerate'}
+                          </button>
+                        )
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-
-      <div className="space-y-12">
-        {drafts.map(draft => {
-          const state = actionState[draft.id]
-
-          if (state === 'approved') {
-            return (
-              <div key={draft.id}>
-                <p className="text-sm text-[#0a0a0a]/40">
-                  Approved. Will publish at midnight IST.
-                </p>
-              </div>
-            )
-          }
-
-          return (
-            <div key={draft.id}>
-              <p className="text-xs text-[#0a0a0a]/40 mb-4">{formatDate(draft.date)}</p>
-
-              <textarea
-                value={editedTexts[draft.id] ?? draft.lyric_text}
-                onChange={e => setEditedTexts(t => ({ ...t, [draft.id]: e.target.value }))}
-                rows={3}
-                className="w-full text-[#0a0a0a] text-xl font-bold leading-snug border border-[#0a0a0a]/15 resize-none p-3 focus:outline-none focus:border-[#0a0a0a]/40 mb-3"
-              />
-
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-[#0a0a0a]/50">{draft.song} — {draft.artist}</p>
-                {draft.album_art_url && (
-                  <a
-                    href={draft.genius_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 shrink-0 ml-4 block overflow-hidden"
-                  >
-                    <img src={draft.album_art_url} alt={draft.song} className="w-full h-full object-cover" />
-                  </a>
-                )}
-              </div>
-
-              {state === 'error' && (
-                <p className="text-xs text-red-500 mb-3">Something went wrong. Try again.</p>
-              )}
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleRegenerate(draft)}
-                  disabled={state === 'regenerating' || state === 'approving'}
-                  className="text-sm text-[#0a0a0a]/60 border border-[#0a0a0a]/15 px-4 py-2 hover:border-[#0a0a0a]/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {state === 'regenerating' ? 'Regenerating…' : 'Regenerate'}
-                </button>
-                <button
-                  onClick={() => handleApprove(draft)}
-                  disabled={state === 'approving' || state === 'regenerating'}
-                  className="text-sm bg-[#ff5c00] text-white font-medium px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#e05200] transition-colors"
-                >
-                  {state === 'approving' ? 'Approving…' : 'Approve'}
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }

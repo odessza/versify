@@ -66,25 +66,43 @@ async function getSongMetaFromGenius(artist, song) {
   }
 }
 
-export async function fetchAndInsertDraft(date) {
-  const { artist, song, lyric } = await getLyricFromGemini()
-  const { albumArtUrl, geniusUrl } = await getSongMetaFromGenius(artist, song)
-
-  const { data, error } = await supabase
+async function isDuplicateLyric(lyricText) {
+  const { data } = await supabase
     .from('lyrics')
-    .insert({
-      date,
-      lyric_text: lyric,
-      song,
-      artist,
-      album_art_url: albumArtUrl,
-      genius_url: geniusUrl,
-      published: false,
-      approved: false,
-    })
-    .select()
-    .single()
+    .select('id')
+    .eq('lyric_text', lyricText)
+    .limit(1)
+  return data && data.length > 0
+}
 
-  if (error) throw new Error(error.message)
-  return data
+export async function fetchAndInsertDraft(date) {
+  const MAX_ATTEMPTS = 3
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const { artist, song, lyric } = await getLyricFromGemini()
+
+    if (await isDuplicateLyric(lyric)) continue
+
+    const { albumArtUrl, geniusUrl } = await getSongMetaFromGenius(artist, song)
+
+    const { data, error } = await supabase
+      .from('lyrics')
+      .insert({
+        date,
+        lyric_text: lyric,
+        song,
+        artist,
+        album_art_url: albumArtUrl,
+        genius_url: geniusUrl,
+        published: false,
+        approved: true,
+      })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    return data
+  }
+
+  throw new Error('Failed to generate a unique lyric after 3 attempts')
 }
