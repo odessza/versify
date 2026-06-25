@@ -24,8 +24,8 @@ A lyric-based anonymous journalling website. Every day, one curated lyric is dis
 - One lyric per day, same for all users — chosen automatically via LLM (Gemini Flash)
 - LLM selects artist, song, and the most "journallable" 1-2 lines using predefined parameters
 - Lyrics fetched via Genius API
-- Admin (owner) reviews and approves tomorrow's lyric via a simple admin view before it goes live
-- Lyric published automatically at a scheduled time daily
+- No manual approval — generated lyrics are auto-approved and publish automatically at midnight IST
+- Duplicate guard: if Gemini returns a lyric_text already in the DB, it retries up to 3 times
 
 ## Design language
 - White background (#ffffff)
@@ -65,10 +65,10 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 - **`src/lib/supabase.js`**: Supabase client using VITE_ env vars
 - **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD
 
-- **`api/generate-lyric.js`**: two daily crons — 03:30 UTC (09:00 IST, primary) and 07:30 UTC (13:00 IST, backup). Calls Gemini 3 Flash + Genius API, inserts draft (`published=false, approved=false`) for tomorrow. Second run is a no-op if draft already exists.
+- **`api/generate-lyric.js`**: two daily crons — 03:30 UTC (09:00 IST, primary) and 07:30 UTC (13:00 IST, backup). Calls Gemini 3 Flash + Genius API, inserts draft (`published=false, approved=true`) for tomorrow. Second run is a no-op if draft already exists.
 - **`api/publish-lyric.js`**: daily cron at 18:30 UTC (= 00:00 IST) — sets `published=true` for today's lyric if `approved=true`. Sends Slack warning if no approved lyric found.
-- **`api/admin-auth.js`**, **`api/admin-lyrics.js`**, **`api/admin-approve.js`**, **`api/admin-regenerate.js`**, **`api/admin-generate.js`**: admin API endpoints, all protected by HMAC token (password never in client bundle). `admin-lyrics` returns `{ drafts, scheduled }`. `admin-generate` triggers tomorrow's draft on demand.
-- **`api/_lyricPipeline.js`**: shared Gemini + Genius + Supabase insert logic used by generate and regenerate
+- **`api/admin-auth.js`**, **`api/admin-lyrics.js`**, **`api/admin-approve.js`**, **`api/admin-regenerate.js`**, **`api/admin-generate.js`**: admin API endpoints, all protected by HMAC token (password never in client bundle). `admin-lyrics` returns `{ lyrics }` — all lyrics ordered by date desc, limit 90. `admin-generate` triggers tomorrow's draft on demand. `admin-approve.js` is unused (approval is now automatic) but kept in place.
+- **`api/_lyricPipeline.js`**: shared Gemini + Genius + Supabase insert logic used by generate and regenerate. Inserts with `approved=true`. Retries up to 3 times if duplicate lyric_text detected.
 - **`api/_adminAuth.js`**: HMAC token generation and verification
 - **`api/_dateIST.js`**: IST date utility for server-side use
 - **`api/_notify.js`**: fire-and-forget Slack webhook helper (`notify(level, source, message)`). Requires `SLACK_WEBHOOK_URL` env var.
@@ -76,7 +76,7 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 - All cron endpoints protected with `CRON_SECRET` bearer token
 - All timezone handling uses IST (UTC+5:30) throughout — both frontend (`src/lib/dateIST.js`) and backend (`api/_dateIST.js`)
 
-- **Admin view** (`/admin`): password login → sessionStorage token. Three sections: (1) Backup Generate Trigger button — manually kicks off tomorrow's draft generation; (2) Scheduled — shows approved, not-yet-published lyrics with date and "Publishes at midnight IST" status; (3) Pending drafts — unapproved drafts with editable lyric textarea, Approve and Regenerate buttons.
+- **Admin view** (`/admin`): password login → sessionStorage token. Two sections: (1) "Generate tomorrow" button — manually kicks off tomorrow's draft in case of cron failure; (2) Lyrics table — all lyrics ordered by date desc, columns: Date / Lyric / Song & Artist / Status badge (Published · Scheduled · Draft) / Regenerate action (unpublished rows only). No manual approval step.
 - **404 page** (`*`): orange "404" label, bold heading, back link to home.
 - **Design system** (`src/index.css`): Tailwind v4 `@theme` tokens — `ink`, `muted`, `line`, `orange`, `orange-dark`, `orange-soft`; `font-display` (Fraunces), `font-sans` (Inter). Fixed `.bg-dawn` gradient + `.bg-grain` SVG noise overlay applied globally in `App.jsx`. `.vinyl` CSS class with `repeating-radial-gradient` grooves and `vinyl-spin` keyframe (hover-triggered, respects `prefers-reduced-motion`).
 - **`src/components/NowPlaying.jsx`**: fixed bottom-right vinyl player showing album art in center label, song/artist text below, spins on hover. Used only on Home page.
@@ -85,7 +85,8 @@ Supabase connected. All pages fetch live data. Deployed to Vercel at https://ver
 - **`.env`**: gitignored; holds VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY, GENIUS_ACCESS_TOKEN, CRON_SECRET, ADMIN_PASSWORD, SLACK_WEBHOOK_URL
 
 ⚠️ Gemini billing must be enabled on the Google Cloud project for the lyric pipeline to run (free tier has quota 0).
-⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set — the Pending drafts section only shows `approved=false, published=false` rows.
+⚠️ When manually inserting lyrics into Supabase for testing, ensure both `approved=true` and `published=true` are set.
+⚠️ Any old rows with `approved=false` in the DB will not auto-publish — flip them to `approved=true` manually in Supabase if needed.
 
 Next:
 - IP-based rate limiting — deferred; current RLS cap (5/user/lyric) covers casual abuse
