@@ -107,7 +107,7 @@ export default function Feed() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-2xl mx-auto px-6 py-12 min-h-[calc(100vh-60px)] flex flex-col">
       <div className="mb-8">
         <p className="text-xl font-bold text-[#0a0a0a] leading-snug mb-1">{lyric.lyric_text}</p>
         <p className="text-sm text-[#0a0a0a]/50">{lyric.song} — {lyric.artist}</p>
@@ -181,8 +181,8 @@ export default function Feed() {
           )}
         </>
       )}
-      <div className="mt-16 text-center">
-        <Link to="/about" className="font-sans text-sm text-muted hover:text-ink transition-colors">
+      <div className="mt-auto pt-16 pb-8 text-center">
+        <Link to="/about" className="font-sans text-base text-muted hover:text-ink transition-colors">
           wtf is this about?
         </Link>
       </div>

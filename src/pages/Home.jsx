@@ -83,7 +83,7 @@ export default function Home() {
 
   return (
     <>
-      <main className="relative z-10 mx-auto max-w-[720px] px-7 pt-24 pb-56">
+      <main className="relative z-10 mx-auto max-w-[720px] px-7 pt-24 pb-8 min-h-[calc(100vh-60px)] flex flex-col">
 
         <div className="mb-0">
           <h1 className="font-display font-bold text-[clamp(34px,5.2vw,58px)] leading-[1.1] tracking-[-0.01em] text-ink">
@@ -142,8 +142,8 @@ export default function Home() {
           </form>
         )}
 
-        <div className="mt-20 text-center">
-          <Link to="/about" className="font-sans text-sm text-muted hover:text-ink transition-colors">
+        <div className="mt-auto pt-16 pb-8 text-center">
+          <Link to="/about" className="font-sans text-base text-muted hover:text-ink transition-colors">
             wtf is this about?
           </Link>
         </div>
