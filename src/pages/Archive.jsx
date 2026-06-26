@@ -87,7 +87,7 @@ export default function Archive() {
   if (loading) return <div className="min-h-screen bg-white" />
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 min-h-[calc(100vh-60px)] flex flex-col">
+    <div className="relative z-10 max-w-2xl mx-auto px-6 py-12 min-h-[calc(100vh-60px)] flex flex-col">
       <h2 className="text-lg font-bold text-[#0a0a0a] mb-8">Archive</h2>
 
       {error && <p className="text-sm text-[#0a0a0a]/40 mb-4">{error}</p>}
