@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
 import { getDateIST } from '../lib/dateIST'
@@ -115,6 +115,11 @@ export default function Archive() {
           ))}
         </div>
       )}
+      <div className="mt-16 text-center">
+        <Link to="/about" className="font-sans text-sm text-muted hover:text-ink transition-colors">
+          wtf is this about?
+        </Link>
+      </div>
     </div>
   )
 }

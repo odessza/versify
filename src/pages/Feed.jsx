@@ -181,6 +181,11 @@ export default function Feed() {
           )}
         </>
       )}
+      <div className="mt-16 text-center">
+        <Link to="/about" className="font-sans text-sm text-muted hover:text-ink transition-colors">
+          wtf is this about?
+        </Link>
+      </div>
     </div>
   )
 }
