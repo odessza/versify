@@ -32,14 +32,15 @@ async function getLyricFromGemini(usedSongsBlock) {
 Select a well-known song with deeply personal, introspective lyrics. Return ONLY a JSON object with these exact fields:
 - artist: the artist or band name (string)
 - song: the song title (string)
-- lyric: 1-2 consecutive lines from the song that are evocative, universal, and would inspire personal reflection (string)
+- lyric: a passage from the song that is evocative, universal, and would inspire personal reflection (string)
 
 Rules:
 - The lyric must be a real, verbatim excerpt from the song
 - Prefer emotionally resonant, poetic lines — not obvious repeated chorus hooks
-- Avoid explicit content
 - Choose from a wide range of genres and eras
 - The lyric should work as a standalone reflection prompt without requiring knowledge of the song
+- Use 1–2 lines when they stand alone powerfully; use a full stanza or up to 4–5 lines when the broader context deepens the emotional impact
+- Do not filter out lyrics that contain profanity — emotional honesty matters more than clean language
 ${usedSongsBlock}
 Respond with only the JSON object, no markdown, no other text.`,
       }],
@@ -82,7 +83,7 @@ async function getPlaceholderFromGemini(lyric, song, artist) {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `You are writing placeholder text for a textarea on an anonymous journaling website. A visitor is about to write a short personal reflection in response to this lyric: '${lyric}' from '${song}' by '${artist}'. Write a single short placeholder sentence (under 10 words) that feels like a quiet, personal invitation — poetic but not precious, warm but not pushy. No quotes. No punctuation at the end. Return only the placeholder text, nothing else.`,
+            text: `You are writing placeholder text for a textarea on an anonymous journaling website. A visitor is about to write a short personal reflection in response to this lyric: '${lyric}' from '${song}' by '${artist}'. Write a single short question or complete sentence (under 10 words) that gently invites the visitor to share a personal reflection. Conversational and warm, not poetic or abstract. If it is a question, end it with a question mark. If it is a statement, do not end it with a period. No quotes. Return only the placeholder text, nothing else.`,
           }],
         }],
       }),
