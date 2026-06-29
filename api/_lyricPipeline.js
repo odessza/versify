@@ -16,16 +16,18 @@ async function getUsedSongs() {
   return `\nDo NOT choose any of the following songs, as they have already been used:\n${list}\n`
 }
 
+const RETRY_DELAYS_MS = [30_000, 60_000, 90_000]
+
+function isTransientError(status) {
+  return status === 429 || status === 503
+}
+
 async function getLyricFromGemini(usedSongsBlock) {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `You are a curator for a lyric-based anonymous journaling website. Each day, one song lyric is shown to all visitors as a writing prompt.
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`
+  const body = JSON.stringify({
+    contents: [{
+      parts: [{
+        text: `You are a curator for a lyric-based anonymous journaling website. Each day, one song lyric is shown to all visitors as a writing prompt.
 
 Select a well-known song with deeply personal, introspective lyrics. Return ONLY a JSON object with these exact fields:
 - artist: the artist or band name (string)
@@ -40,22 +42,35 @@ Rules:
 - The lyric should work as a standalone reflection prompt without requiring knowledge of the song
 ${usedSongsBlock}
 Respond with only the JSON object, no markdown, no other text.`,
-          }],
-        }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-    },
-  )
+      }],
+    }],
+    generationConfig: { responseMimeType: 'application/json' },
+  })
 
-  if (!response.ok) {
+  let lastError
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) throw new Error('Gemini returned no content')
+      return JSON.parse(text)
+    }
+
     const err = await response.json()
-    throw new Error(`Gemini API error: ${err.error?.message ?? response.status}`)
+    lastError = new Error(`Gemini API error: ${err.error?.message ?? response.status}`)
+
+    if (!isTransientError(response.status) || attempt === RETRY_DELAYS_MS.length) break
+
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS_MS[attempt]))
   }
 
-  const data = await response.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) throw new Error('Gemini returned no content')
-  return JSON.parse(text)
+  throw lastError
 }
 
 async function getPlaceholderFromGemini(lyric, song, artist) {
