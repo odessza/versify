@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
@@ -15,8 +15,7 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
-  const wordRefs = useRef([])
+  const [visibleCount, setVisibleCount] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -49,16 +48,17 @@ export default function Home() {
 
   useEffect(() => {
     if (!lyric) return
-    const els = wordRefs.current.slice()
+
+    const total = lyric.lyric_text.replace(/ \/ /g, ' ').split(' ').length + 1
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      els.forEach(el => el.classList.add('visible'))
+      setVisibleCount(total)
       return
     }
 
-    els.forEach(el => el.classList.remove('visible'))
-    const timeouts = els.map((el, i) =>
-      setTimeout(() => el.classList.add('visible'), 300 + i * 100)
+    setVisibleCount(0)
+    const timeouts = Array.from({ length: total }, (_, i) =>
+      setTimeout(() => setVisibleCount(i + 1), 300 + i * 100)
     )
     return () => timeouts.forEach(clearTimeout)
   }, [lyric?.id])
@@ -97,8 +97,11 @@ export default function Home() {
     )
   }
 
-  const wordGrid = lyric.lyric_text.split(' / ').map(line => line.split(' '))
-  wordRefs.current = []
+  let gi = 0
+  const indexedWordGrid = lyric.lyric_text.split(' / ').map(line =>
+    line.split(' ').map(word => ({ word, idx: gi++ }))
+  )
+  const attrIdx = gi
 
   return (
     <>
@@ -106,12 +109,12 @@ export default function Home() {
 
         <div className="mb-0">
           <h1 className="font-display font-bold text-[clamp(34px,5.2vw,58px)] leading-[1.1] tracking-[-0.01em] text-ink">
-            {wordGrid.map((words, li) => (
+            {indexedWordGrid.map((words, li) => (
               <span key={li} className="block">
-                {words.map((word, wi) => (
-                  <Fragment key={wi}>
+                {words.map(({ word, idx }) => (
+                  <Fragment key={idx}>
                     <span className="word">
-                      <span className="word-inner" ref={el => { if (el) wordRefs.current.push(el) }}>
+                      <span className={`word-inner${idx < visibleCount ? ' visible' : ''}`}>
                         {word}
                       </span>
                     </span>
@@ -123,7 +126,7 @@ export default function Home() {
           </h1>
           <p className="mt-6 font-sans font-medium text-sm text-muted">
             <span className="word">
-              <span className="word-inner" ref={el => { if (el) wordRefs.current.push(el) }}>
+              <span className={`word-inner${attrIdx < visibleCount ? ' visible' : ''}`}>
                 {lyric.song} — {lyric.artist}
               </span>
             </span>
