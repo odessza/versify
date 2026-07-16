@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getUserId } from '../lib/userId'
@@ -15,6 +15,8 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const wordRefs = useRef([])
 
   useEffect(() => {
     async function load() {
@@ -44,6 +46,22 @@ export default function Home() {
 
     load()
   }, [])
+
+  useEffect(() => {
+    if (!lyric) return
+    const els = wordRefs.current.slice()
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      els.forEach(el => el.classList.add('visible'))
+      return
+    }
+
+    els.forEach(el => el.classList.remove('visible'))
+    const timeouts = els.map((el, i) =>
+      setTimeout(() => el.classList.add('visible'), 300 + i * 100)
+    )
+    return () => timeouts.forEach(clearTimeout)
+  }, [lyric?.id])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -79,18 +97,36 @@ export default function Home() {
     )
   }
 
-  const lyricLines = lyric.lyric_text.split(' / ')
+  const wordGrid = lyric.lyric_text.split(' / ').map(line => line.split(' '))
+  wordRefs.current = []
 
   return (
     <>
       <main className="relative z-10 mx-auto max-w-[720px] px-7 pt-24 pb-8 min-h-[calc(100vh-60px)] flex flex-col">
 
-        <div className="mb-0 lyric-hero">
+        <div className="mb-0">
           <h1 className="font-display font-bold text-[clamp(34px,5.2vw,58px)] leading-[1.1] tracking-[-0.01em] text-ink">
-            {lyricLines.map((line, i) => <span key={i} className="block lyric-line">{line}</span>)}
+            {wordGrid.map((words, li) => (
+              <span key={li} className="block">
+                {words.map((word, wi) => (
+                  <Fragment key={wi}>
+                    <span className="word">
+                      <span className="word-inner" ref={el => { if (el) wordRefs.current.push(el) }}>
+                        {word}
+                      </span>
+                    </span>
+                    {' '}
+                  </Fragment>
+                ))}
+              </span>
+            ))}
           </h1>
-          <p className="mt-6 font-sans font-medium text-sm text-muted lyric-attr">
-            {lyric.song} — {lyric.artist}
+          <p className="mt-6 font-sans font-medium text-sm text-muted">
+            <span className="word">
+              <span className="word-inner" ref={el => { if (el) wordRefs.current.push(el) }}>
+                {lyric.song} — {lyric.artist}
+              </span>
+            </span>
           </p>
         </div>
 
