@@ -85,11 +85,11 @@ export default function Home() {
     <>
       <main className="relative z-10 mx-auto max-w-[720px] px-7 pt-24 pb-8 min-h-[calc(100vh-60px)] flex flex-col">
 
-        <div className="mb-0">
+        <div className="mb-0 lyric-hero">
           <h1 className="font-display font-bold text-[clamp(34px,5.2vw,58px)] leading-[1.1] tracking-[-0.01em] text-ink">
-            {lyricLines.map((line, i) => <span key={i} className="block">{line}</span>)}
+            {lyricLines.map((line, i) => <span key={i} className="block lyric-line">{line}</span>)}
           </h1>
-          <p className="mt-6 font-sans font-medium text-sm text-muted">
+          <p className="mt-6 font-sans font-medium text-sm text-muted lyric-attr">
             {lyric.song} — {lyric.artist}
           </p>
         </div>

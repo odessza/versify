@@ -55,6 +55,27 @@ body {
     rgba(255,255,255,0) 62%, rgba(255,255,255,0.08) 100%);
 }
 
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lyric-hero .lyric-line {
+  animation: fade-up 0.35s ease both;
+}
+.lyric-hero .lyric-line:nth-child(1) { animation-delay: 0ms; }
+.lyric-hero .lyric-line:nth-child(2) { animation-delay: 120ms; }
+
+.lyric-hero .lyric-attr {
+  animation: fade-up 0.35s ease both;
+  animation-delay: 240ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lyric-hero .lyric-line,
+  .lyric-hero .lyric-attr { animation: none; }
+}
+
 @keyframes vinyl-spin { to { transform: rotate(360deg); } }
 
 .group:hover .vinyl { animation: vinyl-spin 3.4s linear infinite; }
