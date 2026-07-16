@@ -41,6 +41,8 @@ export default function Admin() {
   const [lyricsLoading, setLyricsLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generateResult, setGenerateResult] = useState(null)
+  const [publishing, setPublishing] = useState(false)
+  const [publishResult, setPublishResult] = useState(null)
   const [regenState, setRegenState] = useState({})
 
   useEffect(() => {
@@ -81,6 +83,23 @@ export default function Admin() {
       setAuthError('Wrong password.')
     }
     setAuthLoading(false)
+  }
+
+  async function handlePublish() {
+    setPublishing(true)
+    setPublishResult(null)
+    const res = await fetch('/api/admin-publish', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setPublishResult(data.noop ? 'noop' : 'success')
+      if (!data.noop) loadLyrics(token)
+    } else {
+      setPublishResult('error')
+    }
+    setPublishing(false)
   }
 
   async function handleGenerate() {
@@ -147,6 +166,16 @@ export default function Admin() {
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-lg font-bold text-[#0a0a0a]">Lyrics</h1>
         <div className="flex items-center gap-3">
+          {publishResult === 'success' && <p className="text-xs text-[#0a0a0a]/40">Published.</p>}
+          {publishResult === 'noop' && <p className="text-xs text-[#0a0a0a]/40">Nothing to publish.</p>}
+          {publishResult === 'error' && <p className="text-xs text-red-500">Publish failed.</p>}
+          <button
+            onClick={handlePublish}
+            disabled={publishing}
+            className="text-sm text-[#ff5c00] border border-[#ff5c00]/30 px-4 py-2 hover:border-[#ff5c00] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {publishing ? 'Publishing…' : 'Publish today'}
+          </button>
           {generateResult === 'success' && <p className="text-xs text-[#0a0a0a]/40">Generated.</p>}
           {generateResult === 'exists' && <p className="text-xs text-[#0a0a0a]/40">Already scheduled.</p>}
           {generateResult === 'error' && <p className="text-xs text-red-500">Generation failed.</p>}
